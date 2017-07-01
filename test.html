@@ -9,7 +9,7 @@ var selectedOpeningRange = 1;
 var startDate = new Date(2017,6,1,0,0);
 var tableRowHeight = 70;
 var ticketIdPrefix = "ticket";
-var openingRanges = [{duration:12 * 60,interval:1},{duration:24 * 60,interval:1},{duration:2 * 24 * 60,interval:4},{duration:7 * 24 * 60,interval:12},{duration:14 * 24 * 60,interval:24},{duration:30 * 24 * 60,interval:24}];
+var openingRanges = [{duration:12 * 60,interval:1},{duration:24 * 60,interval:1},{duration:2 * 24 * 60,interval:4},{duration:7 * 24 * 60,interval:12},{duration:14 * 24 * 60,interval:24},{duration:30 * 24 * 60,interval:24},{duration:60 * 24 * 60,interval:48}];
 var machines = [{id:"SM234",name:"Speed 234"},{id:"SM115",name:"Speed 115"},{id:"MR23",name:"MAN 23"}];
 var tickets = [{id:123,title:"t1",machine:"SM234",start:new Date(2017,6,1,2,0),duration:60,color:"#73AD21"},
 {id:125,title:"t2",machine:"SM234",start:new Date(2017,6,1,3,10),duration:180,color:"red"},
@@ -34,6 +34,7 @@ $(document).ready(function(){
     function resizeWindows(){
         $("#scheduling-area").width($(document).width()-20);
         maxwidth = $("#scheduling-area").width();
+        $("#timeLineDiv").width(maxwidth);
         resizeColumns();
         resizeTickets();
     }
@@ -58,7 +59,6 @@ $(document).ready(function(){
         for (var i =0; i < columnsNb; i++) {
         var cell = $("<td></td>");
         cell.addClass("cell");
-        cell.addClass("timeLineCell");
         $("#timeLineRow1").append(cell);
         //$("#timeLineRow2").append(cell);
         }
@@ -75,12 +75,12 @@ $(document).ready(function(){
             var date = new Date(startDate);
             $("#timeLineRow1 > td").each(function(td){
                $(this).text(date.getDate()+"/"+(date.getMonth()+1));
-               date.setDate(date.getDate() + 1);
+               date.setDate(date.getDate() + interval/24);
             });
         }
     }
     function resizeColumns(){
-        var cellwidth = maxwidth / $("#ticketsTable").find("tr:first td").length;
+        var cellwidth = Math.round(maxwidth / $("#ticketsTable").find("tr:first td").length);
         $(".cell").width(cellwidth);
     }
     function changeOpeningRange(){
@@ -197,7 +197,7 @@ body {
     color:darkgray;
     text-align:center;
 }
-.timeLineCell {
+#timeLineRow1 {
     height: 20px
 }
 table {
@@ -215,6 +215,7 @@ div.ticket {
 #scheduling-area {
     position: relative;
 }
+
 </style>
 </head>
 <body>
@@ -223,12 +224,16 @@ div.ticket {
     <button id="modify">modify</button>
     <button id="zoomin">+</button>
     <button id="zoomout">-</button>
+
+    
+    <div id="timeLineDiv">
     <table id="timeLineTable"> 
         <tr id="timeLineRow1">
         </tr>
         <tr id="timeLineRow2">
         </tr>
     </table>
+    </div>
     <div id="scheduling-area">
     <table id="ticketsTable"> 
         <tr class="machineRow">
@@ -238,7 +243,7 @@ div.ticket {
         <tr class="machineRow">
         </tr>
     </table>
-    
     </div>
+    
 </body>
 </html>
