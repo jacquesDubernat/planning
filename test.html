@@ -9,7 +9,7 @@ var selectedOpeningRange = 1;
 var startDate = new Date(2017,6,1,0,0);
 var tableRowHeight = 70;
 var ticketIdPrefix = "ticket";
-var openingRanges = [12 * 60,24 * 60,2 * 24 * 60,7 * 24 * 60,14 * 24 * 60,30 * 24 * 60];
+var openingRanges = [{duration:12 * 60,interval:1},{duration:24 * 60,interval:1},{duration:2 * 24 * 60,interval:8},{duration:7 * 24 * 60,interval:12},{duration:14 * 24 * 60,interval:24},{duration:30 * 24 * 60,interval:24}];
 var machines = [{id:"SM234",name:"Speed 234"},{id:"SM115",name:"Speed 115"},{id:"MR23",name:"MAN 23"}];
 var tickets = [{id:123,title:"t1",machine:"SM234",start:new Date(2017,6,1,2,0),duration:60,color:"#73AD21"},
 {id:125,title:"t2",machine:"SM234",start:new Date(2017,6,1,3,10),duration:180,color:"red"},
@@ -21,30 +21,50 @@ var tickets = [{id:123,title:"t1",machine:"SM234",start:new Date(2017,6,1,2,0),d
    tickets.push({id:i+1000,title:"t1",machine:"SM234",start:start,duration:duration,color:"#73AD21"})
 }*/
 $(document).ready(function(){
-    var maxwidth = $("#scheduling-area").width();
+    var maxwidth = 0;
     var machinesPositions = [];
     $.each( machines, function( key, machine ) {
            machinesPositions.push(machine.id);
         });
-    var resizeTicket = function(ticket){
+    function resizeTicket(ticket){
         $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/openingRange);
         var machineLine = $.inArray(ticket.machine,machinesPositions);
         $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start)/*ticket.start*maxwidth/openingRange*/,top:machineLine*tableRowHeight});
     }
-    var resize = function(){
-        var docwidth = $(document).width();
-        var cellwidth = docwidth / $("table").find("tr:first td").length;
-        $("#scheduling-area").width(docwidth-20);
-        $(".cell").width(cellwidth);
+    function resizeWindows(){
+        $("#scheduling-area").width($(document).width()-20);
+        maxwidth = $("#scheduling-area").width();
+        resizeColumns();
+        resizeTickets();
+    }
+    function resizeTickets(){
         $.each( tickets, function( key, ticket ) {
            resizeTicket(ticket);
         });
     }
-    resize();
+    function resetColumns(){
+        $(".machineRow").empty();
+        var nb = openingRange / (openingRanges[selectedOpeningRange].interval * 60);
+        for (var i =0; i < nb; i++) {
+        var cell = $("<td></td>");
+        cell.addClass("cell");
+        $(".machineRow").append(cell);
+        }
+    }
+    function resizeColumns(){
+        var cellwidth = maxwidth / $("table").find("tr:first td").length;
+        $(".cell").width(cellwidth);
+    }
+    function changeOpeningRange(){
+        resetColumns();
+        resizeColumns();
+    }
+
+    resetColumns();
+    resizeWindows();
+    
     $(window).resize(function() {
-        maxwidth = $("#scheduling-area").width();
-        resize();
-        $("p").text("width "+$(document).width());
+        resizeWindows();
     });
 
     function createTicketElement(ticket){
@@ -73,34 +93,29 @@ $(document).ready(function(){
 $("button#start").click(function(){
     $.each( tickets, function( key, ticket ) {
         var ticketElement = createTicketElement(ticket);
-        
-       resizeTicket(ticket);
+        resizeTicket(ticket);
     });
 });
 $("button#modify").click(function(){
     openingRange = 24 * 60 * 2;
     startDate = new Date(2017,5,30,0,0);
-    $.each( tickets, function( key, ticket ) {
-        resizeTicket(ticket);
-    });
+    resizeTickets();
 });
 $("button#zoomin").click(function(){
     if (selectedOpeningRange===0)
        return;
     selectedOpeningRange--;
-    openingRange = openingRanges[selectedOpeningRange];
-    $.each( tickets, function( key, ticket ) {
-        resizeTicket(ticket);
-    });
+    openingRange = openingRanges[selectedOpeningRange].duration;
+    resizeTickets();
+    changeOpeningRange();
 });
 $("button#zoomout").click(function(){
-    if (selectedOpeningRange>=openingRanges.length)
+    if (selectedOpeningRange>=openingRanges.length-1)
        return;
     selectedOpeningRange++;
-    openingRange = openingRanges[selectedOpeningRange];
-    $.each( tickets, function( key, ticket ) {
-        resizeTicket(ticket);
-    });
+    openingRange = openingRanges[selectedOpeningRange].duration;
+    resizeTickets();
+    changeOpeningRange();
 });
 $("#scheduling-area").droppable({
     drop : function(event,ui){
@@ -140,11 +155,10 @@ function positionToDate(position){
 body {
     background-color:white;
 } 
-.machine-line{
+.machineRow{
     height:70px
 }
 .cell{
-    width: 50px;
     border: 1px solid lightgray;
 }
 table {
@@ -172,47 +186,11 @@ div.ticket {
     <button id="zoomout">-</button>
     <div id="scheduling-area">
     <table>
-        <tr class="machine-line">
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
+        <tr class="machineRow">
         </tr>
- <tr class="machine-line">
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
+        <tr class="machineRow">
         </tr>
-        <tr class="machine-line">
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
-            <td class="cell">
-            </td>
+        <tr class="machineRow">
         </tr>
     </table>
     
