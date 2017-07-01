@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+<script>
+var openingrange = 600;
+var tableRowHeight = 70;
+var ticketIdPrefix = "ticket";
+var machines = [{id:"SM234",name:"Speed 234"},{id:"SM115",name:"Speed 115"},{id:"MR23",name:"MAN 23"}];
+//var machines = {"SM234":"Speed 234","SM115":"Speed 115","MR23":"MAN 23"};
+var tickets = [{id:123,title:"t1",machine:"SM234",start:100,duree:150,color:"#73AD21"},
+{id:125,title:"t2",machine:"SM234",start:300,duree:200,color:"red"},
+{id:234,title:"t2",machine:"SM115",start:300,duree:200,color:"#000021"}];
+/*for (var i=1;i<1000;i++){
+   var duree= Math.random()*200;
+   var start= Math.random()*100;
+   tickets.push({id:i+1000,title:"t1",start:start,duree:duree,color:"#73AD21"})
+}*/
+$(document).ready(function(){
+    var machinesPositions = [];
+    $.each( machines, function( key, machine ) {
+           machinesPositions.push(machine.id);
+        });
+    var resizeTicket = function(ticket){
+        var maxwidth = $("#scheduling-area").width();
+        $("div#ticket"+ticket.id).width(ticket.duree*maxwidth/openingrange);
+        var machineLine = $.inArray(ticket.machine,machinesPositions);
+        $("div#ticket"+ticket.id).css({left: ticket.start*maxwidth/openingrange,top:machineLine*tableRowHeight});
+    }
+    var resize = function(){
+        var docwidth = $(document).width();
+        var cellwidth = docwidth / $("table").find("tr:first td").length;
+        $("#scheduling-area").width(docwidth-20);
+        $(".cell").width(cellwidth);
+        $.each( tickets, function( key, ticket ) {
+           resizeTicket(ticket);
+        });
+    }
+    resize();
+    $(window).resize(function() {
+        resize();
+        $("p").text("width "+$(document).width());
+    });
+
+    function createTicketElement(ticket){
+        var ticketElement = $("<div></div>");
+        ticketElement.text(ticket.title);
+        ticketElement.attr("title","");//pour faire apparaitre le tooltip
+        ticketElement.addClass("ticket");
+        ticketElement.attr("id", ticketIdPrefix+ticket.id);
+        ticketElement.css({"background-color":ticket.color,"vertical-align":"center","text-align": "center"});
+        /*ticketElement.tooltip({
+              content: "<div><p>"+ticket.title+"</p><p>"+ticket.duree+"</p></div>"
+        });*/
+        //ticketElement.tooltip( "option", "content", "<div><p>"+ticket.title+"</p><p>"+ticket.duree+"</p></div>" );
+        return ticketElement;
+    }
+$("button#start").click(function(){
+    $.each( tickets, function( key, ticket ) {
+        var ticketElement = createTicketElement(ticket);
+        $("#scheduling-area").append(ticketElement);
+       ticketElement.draggable({revert : "invalid"});//draggable doit etre defini après avoir placé le ticket dans le dom
+       resizeTicket(ticket);
+    });
+});
+$("button#modify").click(function(){
+    $.each( tickets, function( key, ticket ) {
+        if (ticket.id === 125) {
+            ticket.machine="SM115";ticket.start=0;ticket.duree=120;ticket.color="#000021";
+            resizeTicket(ticket);
+        }
+    });
+});
+$("#scheduling-area").droppable({
+
+    drop : function(event,ui){
+        var ticketId = eval(ui.draggable.attr("id").substring(ticketIdPrefix.length));
+        var currentMachineId = "";
+        var minDelta = 100000;
+        $.each(machines, function( key, machine ) {
+           if (Math.abs(tableRowHeight*key-ui.position.top)<minDelta){
+               minDelta = Math.abs(tableRowHeight*key-ui.position.top);
+               currentMachineId = machine.id;
+           }
+        });
+        //alert(ticketId+" "+ui.position.top+"/"+ui.position.left);
+        var maxwidth = $("#scheduling-area").width();
+        $.each(tickets, function( key, ticket ) {
+                   if (ticket.id === ticketId){
+                       ticket.machine =  currentMachineId;
+                       ticket.start =  ui.position.left*openingrange/maxwidth;
+                       resizeTicket(ticket);
+                       return;
+                   }
+        });
+    }
+
+});
+   //$("#scheduling-area").on("drop", function( event, ui ) {alert(ui)} );
+
+});
+</script>
+<style>
+body {
+    background-color:white;
+} 
+.machine-line{
+    height:70px
+}
+.cell{
+    width: 50px;
+    border: 1px solid lightgray;
+}
+table {
+    border-collapse: collapse;
+    border: 1px solid lightgray;
+}
+div.ticket {
+    position: absolute;
+    display: inline-block;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 70px;
+}
+#scheduling-area {
+    position: relative;
+}
+</style>
+</head>
+<body>
+    <p>hello world !</p>
+    <button id="start">start</button>
+    <button id="modify">modify</button>
+    <div id="scheduling-area">
+    <table>
+        <tr class="machine-line">
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+        </tr>
+ <tr class="machine-line">
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+        </tr>
+        <tr class="machine-line">
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+            <td class="cell">
+            </td>
+        </tr>
+    </table>
+    
+    </div>
+</body>
+</html>
