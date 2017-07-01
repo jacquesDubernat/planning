@@ -4,35 +4,52 @@
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script>
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+var maxwidth = 0;
+var machinesPositions = [];
 var openingRange = 24 * 60;
 var selectedOpeningRange = 1;
 var startDate = new Date(2017,6,1,0,0);
 var tableRowHeight = 70;
 var ticketIdPrefix = "ticket";
 var openingRanges = [{duration:12 * 60,interval:1},{duration:24 * 60,interval:1},{duration:2 * 24 * 60,interval:4},{duration:7 * 24 * 60,interval:12},{duration:14 * 24 * 60,interval:24},{duration:30 * 24 * 60,interval:24},{duration:60 * 24 * 60,interval:48}];
-var machines = [{id:"SM234",name:"Speed 234"},{id:"SM115",name:"Speed 115"},{id:"MR23",name:"MAN 23"}];
-var tickets = [{id:123,title:"t1",machine:"SM234",start:new Date(2017,6,1,2,0),duration:60,color:"#73AD21"},
-{id:125,title:"t2",machine:"SM234",start:new Date(2017,6,1,3,10),duration:180,color:"red"},
-{id:234,title:"t2",machine:"SM115",start:new Date(2017,6,1,4,0),duration:240,color:"#000021"},
-{id:12,machine:"SM115",start:new Date(2017,6,1,0,0),duration:120,closing:1}];
-/*for (var i=1;i<1000;i++){
+var machines = [];
+var tickets = [];
+function loadData(){
+   tickets = [{id:123,title:"t1",machine:"SM234",start:new Date(2017,6,1,2,0),duration:60,color:"#73AD21"},
+              {id:125,title:"t2",machine:"SM234",start:new Date(2017,6,1,3,10),duration:180,color:"red"},
+              {id:234,title:"t2",machine:"SM115",start:new Date(2017,6,1,4,0),duration:240,color:"#000021"},
+              {id:12,machine:"SM115",start:new Date(2017,6,1,0,0),duration:120,closing:1}];
+/*for (var i=1;i<2000;i++){
    var duration= Math.random()*150+50;
-   var start= Math.random()*2000-1000;
-   tickets.push({id:i+1000,title:"t1",machine:"SM234",start:start,duration:duration,color:"#73AD21"})
-}*/
-$(document).ready(function(){
-    var maxwidth = 0;
-    var machinesPositions = [];
-    $.each( machines, function( key, machine ) {
+   var start= new Date(2017,Math.trunc(Math.random()*11),Math.trunc(Math.random()*30),0,0);
+   var machineIndex =Math.trunc(Math.random()*3);
+   tickets.push({id:i+1000,title:"t1",machine:machines[machineIndex].id,start:start,duration:duration,color:rgbToHex(Math.round(Math.random()*256), Math.round(Math.random()*256), Math.round(Math.random()*256))})
+*/
+   machines = [{id:"SM234",name:"Speed 234"},{id:"SM115",name:"Speed 115"},{id:"MR23",name:"MAN 23"}];
+
+}
+function setMachines(){
+   $.each( machines, function( key, machine ) {
            machinesPositions.push(machine.id);
         });
+}
+$(document).ready(function(){
+    
     function resizeTicket(ticket){
         $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/openingRange);
         var machineLine = $.inArray(ticket.machine,machinesPositions);
-        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start)/*ticket.start*maxwidth/openingRange*/,top:machineLine*tableRowHeight});
+        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*tableRowHeight});
     }
     function resizeWindows(){
-        $("#scheduling-area").width($(document).width()-20);
+        $("#scheduling-area").width($(window).width()-20);//$(document).width() devient faux quand il y a beacoup de tickets
         maxwidth = $("#scheduling-area").width();
         $("#timeLineDiv").width(maxwidth);
         resizeColumns();
@@ -81,6 +98,7 @@ $(document).ready(function(){
     }
     function resizeColumns(){
         var cellwidth = Math.round(maxwidth / $("#ticketsTable").find("tr:first td").length);
+        console.log("cellwidth "+cellwidth);
         $(".cell").width(cellwidth);
     }
     function changeOpeningRange(){
@@ -95,9 +113,10 @@ $(document).ready(function(){
     resizeWindows();
     updateTimeLine();
 
-    $(window).resize(function() {
+    $(window).resize(function(){
         resizeWindows();
     });
+
 
     function createTicketElement(ticket){
         var ticketElement = $("<div></div>");
@@ -123,6 +142,8 @@ $(document).ready(function(){
         return ticketElement;
     }
 $("button#start").click(function(){
+    loadData();
+    setMachines();
     $.each( tickets, function( key, ticket ) {
         var ticketElement = createTicketElement(ticket);
         resizeTicket(ticket);
@@ -160,11 +181,10 @@ $("#scheduling-area").droppable({
                currentMachineId = machine.id;
            }
         });
-        //alert(ticketId+" "+ui.position.top+"/"+ui.position.left);
         $.each(tickets, function( key, ticket ) {
                    if (ticket.id === ticketId){
                        ticket.machine =  currentMachineId;
-                       ticket.start =  positionToDate(ui.position.left);//*openingRange/maxwidth;
+                       ticket.start =  positionToDate(ui.position.left);
                        resizeTicket(ticket);
                        return;
                    }
@@ -172,7 +192,6 @@ $("#scheduling-area").droppable({
     }
 
 });
-   //$("#scheduling-area").on("drop", function( event, ui ) {alert(ui)} );
 function dateToPosition(date){
     var elapseMin = (date.getTime() - startDate.getTime()) / (1000 * 60);
     return elapseMin*maxwidth/openingRange;
@@ -181,6 +200,7 @@ function positionToDate(position){
     var minFromStart=position*openingRange/maxwidth;
     return new Date(startDate.getTime() + minFromStart*60000);
 }
+
 });
 </script>
 <style>
