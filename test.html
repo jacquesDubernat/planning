@@ -62,6 +62,11 @@ var timeLineScale = function(){
         getStartDate : function(){
             return new Date(startDate);
         },
+        getEndDate : function(){
+            var endDate = new Date(startDate);
+            endDate.setHours(endDate.getHours()+this.getDuration()/60);
+            return endDate;
+        },
         updateStartDateCenterOn: function(date){
             date.setHours(date.getHours()-this.getDuration()/(2*60));
             startDate = new Date(date);
@@ -104,9 +109,22 @@ $(document).ready(function(){
         resizeTickets();
     }
     function resizeTicket(ticket){
-        $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/timeLineScale.getDuration());
         var machineLine = $.inArray(ticket.machine,machinesPositions);
-        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*$(".machineRow").height()+$("#ticketsTable>thead").height()});
+        var endDate = new Date(ticket.start);
+        endDate.setHours(endDate.getHours()+ticket.duration/60);
+        if (endDate <= timeLineScale.getStartDate() || ticket.start >= timeLineScale.getEndDate()){
+            $("div#ticket"+ticket.id).css("display","none");
+        } else {
+            $("div#ticket"+ticket.id).css("display","block");
+        }
+        var visibleStartDate = ticket.start < timeLineScale.getStartDate() ? timeLineScale.getStartDate() : ticket.start;
+        var visibleEndDate = endDate > timeLineScale.getEndDate() ? timeLineScale.getEndDate() : endDate;
+        var timeDiff = Math.abs(visibleEndDate.getTime() - visibleStartDate.getTime()) / (1000 * 60);
+        $("div#ticket"+ticket.id).width(timeDiff*maxwidth/timeLineScale.getDuration());
+        $("div#ticket"+ticket.id).css({left: dateToPosition(visibleStartDate),top:machineLine*$(".machineRow").height()+$("#ticketsTable>thead").height()});
+        /*
+        $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/timeLineScale.getDuration());
+        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*$(".machineRow").height()+$("#ticketsTable>thead").height()});*/
     }
     function resizeWindows(){
         //$("#schedulingDiv").width($(window).width()-20);//$(document).width() devient faux quand il y a beacoup de tickets
