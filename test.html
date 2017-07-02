@@ -18,7 +18,6 @@ var colorUtils = function(){
 var maxwidth = 0;
 var machinesPositions = [];
 
-var tableRowHeight = 0;
 var ticketIdPrefix = "ticket";
 var timeLineScale = function(){
     var startDate = new Date(2017,6,1,0,0);
@@ -48,11 +47,6 @@ var timeLineScale = function(){
             startDate = middleDate;
             if (this.getInterval()>=24){
                 startDate.setHours(0);
-            } else {
-                /*if (savHours>0) {
-                   startDate.setHours(savHours);
-                   savHours = 0;
-                }*/
             }
             return true;
         },
@@ -101,8 +95,8 @@ function setMachines(){
            machinesPositions.push(machine.id);
         });
 }
+
 $(document).ready(function(){
-    tableRowHeight = $(".machineRow").height();
 
     function offsetStartDate(stringDate){
         timeLineScale.updateStartDateCenterOn(new Date(stringDate));
@@ -112,7 +106,7 @@ $(document).ready(function(){
     function resizeTicket(ticket){
         $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/timeLineScale.getDuration());
         var machineLine = $.inArray(ticket.machine,machinesPositions);
-        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*tableRowHeight+$("#ticketsTable>thead").height()});
+        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*$(".machineRow").height()+$("#ticketsTable>thead").height()});
     }
     function resizeWindows(){
         $("#scheduling-area").width($(window).width()-20);//$(document).width() devient faux quand il y a beacoup de tickets
@@ -130,7 +124,7 @@ $(document).ready(function(){
         var columnsNb = timeLineScale.getDuration() / (timeLineScale.getInterval() * 60);
         for (var i =0; i < columnsNb; i++) {
         var cell = $("<td></td>");
-        var headCell = $("<td>12</td>");
+        var headCell = $("<td></td>");
         cell.addClass("cell");
         headCell.addClass("cell");
         headCell.addClass("timeLineCell");
@@ -138,6 +132,13 @@ $(document).ready(function(){
         $("#timeLineRow1").append(headCell);
         }
         $(".cell").width(100/$("#ticketsTable").find("tr:first td").length+ "%");
+    }
+    function resetRows(){
+        for (var i = 0; i < machines.length; i++) {
+            var row = $("<tr></tr>");
+            row.addClass("machineRow");
+            $("#ticketsTable>tbody").append(row);
+        }
     }
     
     function updateTimeLine(){
@@ -166,10 +167,6 @@ $(document).ready(function(){
         resetColumns();
         updateTimeLine();
     }
-
-    resetColumns();
-    resizeWindows();
-    updateTimeLine();
 
     $(window).resize(function(){
         resizeWindows();
@@ -202,6 +199,10 @@ $(document).ready(function(){
 $("button#start").click(function(){
     loadData();
     setMachines();
+    resetRows();
+    resetColumns();
+    resizeWindows();
+    updateTimeLine();
     $.each( tickets, function( key, ticket ) {
         var ticketElement = createTicketElement(ticket);
         resizeTicket(ticket);
@@ -225,8 +226,8 @@ $("#scheduling-area").droppable({
         var currentMachineId = "";
         var minDelta = 100000;
         $.each(machines, function( key, machine ) {
-           if (Math.abs(tableRowHeight*key-ui.position.top)<minDelta){
-               minDelta = Math.abs(tableRowHeight*key-ui.position.top);
+           if (Math.abs($(".machineRow").height()*key-ui.position.top)<minDelta){
+               minDelta = Math.abs($(".machineRow").height()*key-ui.position.top);
                currentMachineId = machine.id;
            }
         });
@@ -302,17 +303,10 @@ div.ticket {
     <div id="scheduling-area">
     <table id="ticketsTable"> 
         <thead>
-  <tr id="timeLineRow1">
-  </tr>
- </thead>
-    <tbody>
-        <tr class="machineRow">
-        </tr>
-        <tr class="machineRow">
-        </tr>
-        <tr class="machineRow">
-        </tr>
- </tbody>
+           <tr id="timeLineRow1"></tr>
+        </thead>
+        <tbody>
+        </tbody>
     </table>
     </div>
     
