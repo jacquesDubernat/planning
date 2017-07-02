@@ -53,7 +53,7 @@ $(document).ready(function(){
     function resizeTicket(ticket){
         $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/openingRanges[selectedOpeningRange].duration);
         var machineLine = $.inArray(ticket.machine,machinesPositions);
-        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*tableRowHeight});
+        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*tableRowHeight+$("#ticketsTable>thead").height()});
     }
     function resizeWindows(){
         $("#scheduling-area").width($(window).width()-20);//$(document).width() devient faux quand il y a beacoup de tickets
@@ -69,25 +69,19 @@ $(document).ready(function(){
     }
     function resetColumns(){
         $(".machineRow").empty();
+        $("#timeLineRow1").empty();
         var columnsNb = openingRanges[selectedOpeningRange].duration / (openingRanges[selectedOpeningRange].interval * 60);
         for (var i =0; i < columnsNb; i++) {
         var cell = $("<td></td>");
+        var headCell = $("<td>12</td>");
         cell.addClass("cell");
+        headCell.addClass("cell");
+        headCell.addClass("timeLineCell");
         $(".machineRow").append(cell);
+        $("#timeLineRow1").append(headCell);
         }
     }
-    function resetTimeLine(){
-       $("#timeLineRow1").empty();
-       $("#timeLineRow2").empty();
-       var columnsNb = openingRanges[selectedOpeningRange].duration / (openingRanges[selectedOpeningRange].interval * 60);
-        for (var i =0; i < columnsNb; i++) {
-        var cell = $("<td></td>");
-        cell.addClass("cell");
-        cell.addClass("timeLineCell");
-        $("#timeLineRow1").append(cell);
-        //$("#timeLineRow2").append(cell);
-        }
-    }
+    
     function updateTimeLine(){
         var interval = openingRanges[selectedOpeningRange].interval;
         var date = new Date(startDate);
@@ -98,11 +92,6 @@ $(document).ready(function(){
                $(this).attr("datestring",date.toString());
                date.setHours(date.getHours() + interval);
             });
-            /*var hour = (startDate.getHours()*interval)%24;
-            $("#timeLineRow1 > td").each(function(td){
-               $(this).text(hour<10?"0"+hour+":00":hour+":00");
-               hour=(hour+interval)%24;
-            });*/
         }else{
             $("#timeLineRow1 > td").each(function(td){
                $(this).text(date.getDate()+"/"+(date.getMonth()+1));
@@ -116,18 +105,15 @@ $(document).ready(function(){
     }
     function resizeColumns(){
         var cellwidth = Math.round(maxwidth / $("#ticketsTable").find("tr:first td").length);
-        console.log("cellwidth "+cellwidth);
         $(".cell").width(cellwidth);
     }
     function changeOpeningRange(){
         resetColumns();
-        resetTimeLine();
         resizeColumns();
         updateTimeLine();
     }
 
     resetColumns();
-    resetTimeLine();
     resizeWindows();
     updateTimeLine();
 
@@ -255,24 +241,21 @@ div.ticket {
     <button id="modify">modify</button>
     <button id="zoomin">+</button>
     <button id="zoomout">-</button>
-
     
-    <div id="timeLineDiv">
-    <table id="timeLineTable"> 
-        <tr id="timeLineRow1">
-        </tr>
-        <tr id="timeLineRow2">
-        </tr>
-    </table>
-    </div>
     <div id="scheduling-area">
     <table id="ticketsTable"> 
+        <thead>
+  <tr id="timeLineRow1">
+  </tr>
+ </thead>
+ <tbody>
         <tr class="machineRow">
         </tr>
         <tr class="machineRow">
         </tr>
         <tr class="machineRow">
         </tr>
+ </tbody>
     </table>
     </div>
     
