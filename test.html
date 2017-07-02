@@ -16,7 +16,7 @@ var maxwidth = 0;
 var machinesPositions = [];
 var selectedOpeningRange = 1;
 var startDate = new Date(2017,6,1,0,0);
-var tableRowHeight = 70;
+var tableRowHeight = 0;
 var ticketIdPrefix = "ticket";
 var openingRanges = [{duration:12 * 60,interval:1},{duration:24 * 60,interval:1},{duration:2 * 24 * 60,interval:4},{duration:7 * 24 * 60,interval:12},{duration:14 * 24 * 60,interval:24},{duration:30 * 24 * 60,interval:24},{duration:60 * 24 * 60,interval:48}];
 var machines = [];
@@ -43,7 +43,7 @@ function setMachines(){
         });
 }
 $(document).ready(function(){
-    
+    tableRowHeight = $(".machineRow").height();
     function offsetStartDate(stringDate){
         startDate = new Date(stringDate);
         startDate.setHours(startDate.getHours()-openingRanges[selectedOpeningRange].duration/(2*60));
@@ -248,7 +248,7 @@ div.ticket {
   <tr id="timeLineRow1">
   </tr>
  </thead>
- <tbody>
+    <tbody>
         <tr class="machineRow">
         </tr>
         <tr class="machineRow">
