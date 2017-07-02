@@ -97,7 +97,7 @@ function setMachines(){
 }
 
 $(document).ready(function(){
-
+    
     function offsetStartDate(stringDate){
         timeLineScale.updateStartDateCenterOn(new Date(stringDate));
         updateTimeLine();
@@ -134,6 +134,7 @@ $(document).ready(function(){
         $(".cell").width(100/$("#ticketsTable").find("tr:first td").length+ "%");
     }
     function resetRows(){
+        $("#ticketsTable>tbody").empty();
         for (var i = 0; i < machines.length; i++) {
             var row = $("<tr></tr>");
             row.addClass("machineRow");
@@ -255,7 +256,7 @@ function positionToDate(position){
 </script>
 <style>
 body {
-    background-color:white;
+    background-color: rgb(242,242,242);
     font-family:arial;
 } 
 .machineRow{
@@ -271,6 +272,7 @@ body {
     height: 20px
 }
 table {
+    background-color: white;
     border-collapse: collapse;
     border: 1px solid lightgray;
     table-layout: fixed;
@@ -288,7 +290,9 @@ div.ticket {
     height: 70px;
 }
 #scheduling-area {
+    margin: 10px 0 0 0;
     position: relative;
+    box-shadow: 0 0.2rem 0.8rem 0 rgba(0,0,0,0.08), 0 0.4rem 1.6rem 0 rgba(0,0,0,0.16);
 }
 
 </style>
@@ -301,14 +305,13 @@ div.ticket {
     <button id="zoomout">-</button>
     
     <div id="scheduling-area">
-    <table id="ticketsTable"> 
-        <thead>
-           <tr id="timeLineRow1"></tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
+       <table id="ticketsTable"> 
+          <thead>
+             <tr id="timeLineRow1"></tr>
+          </thead>
+          <tbody>
+          </tbody>
+       </table>
     </div>
-    
 </body>
 </html>
