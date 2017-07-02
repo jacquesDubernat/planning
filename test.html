@@ -4,28 +4,83 @@
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
 <script>
-function componentToHex(c) {
-    var hex = c.toString(16);
-    return hex.length == 1 ? "0" + hex : hex;
-}
-
-function rgbToHex(r, g, b) {
-    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
-}
+var colorUtils = function(){
+    function componentToHex(c) {
+        var hex = c.toString(16);
+        return hex.length == 1 ? "0" + hex : hex;
+    }
+    return {
+        rgbToHex: function(r, g, b) {
+           return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        }
+    }
+}();
 var maxwidth = 0;
 var machinesPositions = [];
-var selectedOpeningRange = 1;
-var startDate = new Date(2017,6,1,0,0);
+
 var tableRowHeight = 0;
 var ticketIdPrefix = "ticket";
-var openingRanges = [{duration:12 * 60,interval:1},{duration:24 * 60,interval:1},{duration:2 * 24 * 60,interval:4},{duration:7 * 24 * 60,interval:12},{duration:14 * 24 * 60,interval:24},{duration:30 * 24 * 60,interval:24},{duration:60 * 24 * 60,interval:48}];
+var timeLineScale = function(){
+    var startDate = new Date(2017,6,1,0,0);
+    var selectedOpeningRange = 1;
+    var openingRanges = [{duration:12 * 60,interval:1},{duration:24 * 60,interval:1},{duration:2 * 24 * 60,interval:2},{duration:7 * 24 * 60,interval:6},{duration:14 * 24 * 60,interval:24},{duration:30 * 24 * 60,interval:24},{duration:60 * 24 * 60,interval:48}];
+    var savHours = 0;
+    return {
+        setScale : function(index){
+            if (typeof index === 'number' && index >= 0 && index < openingRanges.length) {
+                selectedOpeningRange = index;
+                return true;
+            }
+            return false;
+        },
+        zoom : function(inc){
+            if (this.getInterval()>=24){
+                savHours = startDate.getHours();
+            }
+            var duration = this.getDuration()/60;
+            var middleDate = new Date(startDate);
+            middleDate.setHours(middleDate.getHours()+duration/2);
+            if(!this.setScale(selectedOpeningRange+inc)) {
+                return false;
+            }
+            duration = this.getDuration()/60;
+            middleDate.setHours(middleDate.getHours()-duration/2);
+            startDate = middleDate;
+            if (this.getInterval()>=24){
+                startDate.setHours(0);
+            } else {
+                /*if (savHours>0) {
+                   startDate.setHours(savHours);
+                   savHours = 0;
+                }*/
+            }
+            return true;
+        },
+        getDuration : function(){
+            return openingRanges[selectedOpeningRange].duration;
+        },
+        getInterval : function(){
+            return openingRanges[selectedOpeningRange].interval;
+        },
+        getSelected : function(){
+            return selectedOpeningRange;
+        },
+        getStartDate : function(){
+            return new Date(startDate);
+        },
+        updateStartDateCenterOn: function(date){
+            date.setHours(date.getHours()-this.getDuration()/(2*60));
+            startDate = new Date(date);
+        }
+    }
+}();
 var machines = [];
 var tickets = [];
 function loadData(){
    machines = [{id:"SM234",name:"Speed 234"},{id:"SM115",name:"Speed 115"},{id:"MR23",name:"MAN 23"}];
    
    tickets = [{id:123,title:"t1",machine:"SM234",start:new Date(2017,6,1,2,0),duration:60,color:"#73AD21"},
-              {id:125,title:"t2",machine:"SM234",start:new Date(2017,6,1,3,10),duration:180,color:"red"},
+              {id:125,title:"t2",machine:"SM234",start:new Date(2017,6,1,10,0),duration:240,color:"red"},
               {id:234,title:"t2",machine:"SM115",start:new Date(2017,6,1,4,0),duration:240,color:"#000021"},
                {id:1,title:"t2",machine:"SM115",start:new Date(2017,6,3,0,0),duration:60*24*2,color:"#000021"},
               {id:2,title:"t2",machine:"SM115",start:new Date(2017,6,19,0,0),duration:60*24*2,color:"#000021"},
@@ -37,7 +92,7 @@ for (var i=1;i<2000;i++){
    var duration= Math.random()*150+50;
    var start= new Date(2017,Math.trunc(Math.random()*11),Math.trunc(Math.random()*30),0,0);
    var machineIndex =Math.trunc(Math.random()*3);
-   tickets.push({id:i+1000,title:"t1",machine:machines[machineIndex].id,start:start,duration:duration,color:rgbToHex(Math.round(Math.random()*256), Math.round(Math.random()*256), Math.round(Math.random()*256))})
+   tickets.push({id:i+1000,title:"t1",machine:machines[machineIndex].id,start:start,duration:duration,color:colorUtils.rgbToHex(Math.round(Math.random()*256), Math.round(Math.random()*256), Math.round(Math.random()*256))})
 }*/
    
 }
@@ -48,14 +103,14 @@ function setMachines(){
 }
 $(document).ready(function(){
     tableRowHeight = $(".machineRow").height();
+
     function offsetStartDate(stringDate){
-        startDate = new Date(stringDate);
-        startDate.setHours(startDate.getHours()-openingRanges[selectedOpeningRange].duration/(2*60));
+        timeLineScale.updateStartDateCenterOn(new Date(stringDate));
         updateTimeLine();
         resizeTickets();
     }
     function resizeTicket(ticket){
-        $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/openingRanges[selectedOpeningRange].duration);
+        $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/timeLineScale.getDuration());
         var machineLine = $.inArray(ticket.machine,machinesPositions);
         $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*tableRowHeight+$("#ticketsTable>thead").height()});
     }
@@ -72,7 +127,7 @@ $(document).ready(function(){
     function resetColumns(){
         $(".machineRow").empty();
         $("#timeLineRow1").empty();
-        var columnsNb = openingRanges[selectedOpeningRange].duration / (openingRanges[selectedOpeningRange].interval * 60);
+        var columnsNb = timeLineScale.getDuration() / (timeLineScale.getInterval() * 60);
         for (var i =0; i < columnsNb; i++) {
         var cell = $("<td></td>");
         var headCell = $("<td>12</td>");
@@ -86,8 +141,8 @@ $(document).ready(function(){
     }
     
     function updateTimeLine(){
-        var interval = openingRanges[selectedOpeningRange].interval;
-        var date = new Date(startDate);
+        var interval = timeLineScale.getInterval();
+        var date = timeLineScale.getStartDate();
         if (interval<24){
             $("#timeLineRow1 > td").each(function(td){
                var hour = date.getHours();
@@ -105,6 +160,7 @@ $(document).ready(function(){
         $(".timeLineCell").off("click").click(function(){
             offsetStartDate($(this).attr("datestring"));
         });
+        $("p").text(timeLineScale.getStartDate());
     }
     function changeOpeningRange(){
         resetColumns();
@@ -152,18 +208,16 @@ $("button#start").click(function(){
     });
 });
 $("button#zoomin").click(function(){
-    if (selectedOpeningRange===0)
-       return;
-    selectedOpeningRange--;
-    resizeTickets();
-    changeOpeningRange();
+    if (timeLineScale.zoom(-1)){
+       resizeTickets();
+       changeOpeningRange();
+    }
 });
 $("button#zoomout").click(function(){
-    if (selectedOpeningRange>=openingRanges.length-1)
-       return;
-    selectedOpeningRange++;
-    resizeTickets();
-    changeOpeningRange();
+    if (timeLineScale.zoom(1)){
+       resizeTickets();
+       changeOpeningRange();
+    }
 });
 $("#scheduling-area").droppable({
     drop : function(event,ui){
@@ -188,12 +242,12 @@ $("#scheduling-area").droppable({
 
 });
 function dateToPosition(date){
-    var elapseMin = (date.getTime() - startDate.getTime()) / (1000 * 60);
-    return elapseMin*maxwidth/openingRanges[selectedOpeningRange].duration;
+    var elapseMin = (date.getTime() - timeLineScale.getStartDate().getTime()) / (1000 * 60);
+    return elapseMin*maxwidth/timeLineScale.getDuration();
 }
 function positionToDate(position){
-    var minFromStart=position*openingRanges[selectedOpeningRange].duration/maxwidth;
-    return new Date(startDate.getTime() + minFromStart*60000);
+    var minFromStart=position*timeLineScale.getDuration()/maxwidth;
+    return new Date(timeLineScale.getStartDate().getTime() + minFromStart*60000);
 }
 
 });
