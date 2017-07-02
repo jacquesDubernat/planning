@@ -109,8 +109,8 @@ $(document).ready(function(){
         $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*$(".machineRow").height()+$("#ticketsTable>thead").height()});
     }
     function resizeWindows(){
-        $("#scheduling-area").width($(window).width()-20);//$(document).width() devient faux quand il y a beacoup de tickets
-        maxwidth = $("#scheduling-area").width();
+        //$("#schedulingDiv").width($(window).width()-20);//$(document).width() devient faux quand il y a beacoup de tickets
+        maxwidth = $("#schedulingDiv").width();
         resizeTickets();
     }
     function resizeTickets(){
@@ -181,7 +181,7 @@ $(document).ready(function(){
         ticketElement.addClass("ticket");
         ticketElement.attr("id", ticketIdPrefix+ticket.id);
         ticketElement.css({"background-color":ticket.color||"lightgray","vertical-align":"center","text-align": "center"});
-        $("#scheduling-area").append(ticketElement);
+        $("#schedulingDiv").append(ticketElement);
         if (!ticket.closing) {
         ticketElement.draggable({
            revert : "invalid",
@@ -221,7 +221,7 @@ $("button#zoomout").click(function(){
        changeOpeningRange();
     }
 });
-$("#scheduling-area").droppable({
+$("#schedulingDiv").droppable({
     drop : function(event,ui){
         var ticketId = eval(ui.draggable.attr("id").substring(ticketIdPrefix.length));
         var currentMachineId = "";
@@ -272,7 +272,6 @@ body {
     height: 20px
 }
 table {
-    background-color: white;
     border-collapse: collapse;
     border: 1px solid lightgray;
     table-layout: fixed;
@@ -289,22 +288,29 @@ div.ticket {
     width: 0;
     height: 70px;
 }
-#scheduling-area {
+#topDiv {
+    margin: 10px;
+    padding: 10px;
+    background-color: white;
+    box-shadow: 0 0.2rem 0.8rem 0 rgba(0,0,0,0.08), 0 0.4rem 1.6rem 0 rgba(0,0,0,0.16);
+}
+#schedulingDiv {
     margin: 10px 0 0 0;
     position: relative;
-    box-shadow: 0 0.2rem 0.8rem 0 rgba(0,0,0,0.08), 0 0.4rem 1.6rem 0 rgba(0,0,0,0.16);
 }
 
 </style>
 </head>
 <body>
     <p>hello world !</p>
+
+    <div id="topDiv">
     <button id="start">start</button>
     <button id="modify">modify</button>
     <button id="zoomin">+</button>
     <button id="zoomout">-</button>
     
-    <div id="scheduling-area">
+    <div id="schedulingDiv">
        <table id="ticketsTable"> 
           <thead>
              <tr id="timeLineRow1"></tr>
@@ -312,6 +318,7 @@ div.ticket {
           <tbody>
           </tbody>
        </table>
+    </div>
     </div>
 </body>
 </html>
