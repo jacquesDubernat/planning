@@ -102,10 +102,12 @@ function setMachines(){
 }
 
 $(document).ready(function(){
-    
+       
+    var firstColumnWidth = $("#corner").width();
+
     function offsetStartDate(stringDate){
         timeLineScale.updateStartDateCenterOn(new Date(stringDate));
-        updateTimeLine();
+        offsetTimeLine();
         resizeTickets();
     }
     function resizeTicket(ticket){
@@ -121,70 +123,25 @@ $(document).ready(function(){
         var visibleEndDate = endDate > timeLineScale.getEndDate() ? timeLineScale.getEndDate() : endDate;
         var timeDiff = Math.abs(visibleEndDate.getTime() - visibleStartDate.getTime()) / (1000 * 60);
         $("div#ticket"+ticket.id).width(timeDiff*maxwidth/timeLineScale.getDuration());
-        $("div#ticket"+ticket.id).css({left: dateToPosition(visibleStartDate),top:machineLine*$(".machineRow").height()+$("#ticketsTable>thead").height()});
-        /*
-        $("div#ticket"+ticket.id).width(ticket.duration*maxwidth/timeLineScale.getDuration());
-        $("div#ticket"+ticket.id).css({left: dateToPosition(ticket.start),top:machineLine*$(".machineRow").height()+$("#ticketsTable>thead").height()});*/
+        $("div#ticket"+ticket.id).css({left: dateToPosition(visibleStartDate),top:machineLine*$(".machineRowContainer").height()});
     }
+
     function resizeWindows(){
         //$("#schedulingDiv").width($(window).width()-20);//$(document).width() devient faux quand il y a beacoup de tickets
-        maxwidth = $("#schedulingDiv").width();
-        resizeTickets();
+        firstColumnWidth = $("#corner").width() +1;
+        maxwidth = $("#timeLineContainer").width() - firstColumnWidth;
+           resizeColumns();
+           resizeTickets();
     }
+
     function resizeTickets(){
         $.each( tickets, function( key, ticket ) {
            resizeTicket(ticket);
         });
     }
-    function resetColumns(){
-        $(".machineRow").empty();
-        $("#timeLineRow1").empty();
-        var columnsNb = timeLineScale.getDuration() / (timeLineScale.getInterval() * 60);
-        for (var i =0; i < columnsNb; i++) {
-        var cell = $("<td></td>");
-        var headCell = $("<td></td>");
-        cell.addClass("cell");
-        headCell.addClass("cell");
-        headCell.addClass("timeLineCell");
-        $(".machineRow").append(cell);
-        $("#timeLineRow1").append(headCell);
-        }
-        $(".cell").width(100/$("#ticketsTable").find("tr:first td").length+ "%");
-    }
-    function resetRows(){
-        $("#ticketsTable>tbody").empty();
-        for (var i = 0; i < machines.length; i++) {
-            var row = $("<tr></tr>");
-            row.addClass("machineRow");
-            $("#ticketsTable>tbody").append(row);
-        }
-    }
-    
-    function updateTimeLine(){
-        var interval = timeLineScale.getInterval();
-        var date = timeLineScale.getStartDate();
-        if (interval<24){
-            $("#timeLineRow1 > td").each(function(td){
-               var hour = date.getHours();
-               $(this).text(hour<10?"0"+hour+":00":hour+":00");
-               $(this).attr("datestring",date.toString());
-               date.setHours(date.getHours() + interval);
-            });
-        }else{
-            $("#timeLineRow1 > td").each(function(td){
-               $(this).text(date.getDate()+"/"+(date.getMonth()+1));
-               $(this).attr("datestring",date.toString());
-               date.setDate(date.getDate() + interval/24);
-            });
-        }
-        $(".timeLineCell").off("click").click(function(){
-            offsetStartDate($(this).attr("datestring"));
-        });
-        $("p").text(timeLineScale.getStartDate());
-    }
+
     function changeOpeningRange(){
-        resetColumns();
-        updateTimeLine();
+        changeTimeScale();
     }
 
     $(window).resize(function(){
@@ -199,7 +156,7 @@ $(document).ready(function(){
         ticketElement.addClass("ticket");
         ticketElement.attr("id", ticketIdPrefix+ticket.id);
         ticketElement.css({"background-color":ticket.color||"lightgray","vertical-align":"center","text-align": "center"});
-        $("#schedulingDiv").append(ticketElement);
+        $("#ticketsContainer").append(ticketElement);
         if (!ticket.closing) {
         ticketElement.draggable({
            revert : "invalid",
@@ -215,18 +172,7 @@ $(document).ready(function(){
         //ticketElement.tooltip( "option", "content", "<div><p>"+ticket.title+"</p><p>"+ticket.duration+"</p></div>" );
         return ticketElement;
     }
-$("button#start").click(function(){
-    loadData();
-    setMachines();
-    resetRows();
-    resetColumns();
-    resizeWindows();
-    updateTimeLine();
-    $.each( tickets, function( key, ticket ) {
-        var ticketElement = createTicketElement(ticket);
-        resizeTicket(ticket);
-    });
-});
+
 $("button#zoomin").click(function(){
     if (timeLineScale.zoom(-1)){
        resizeTickets();
@@ -239,14 +185,14 @@ $("button#zoomout").click(function(){
        changeOpeningRange();
     }
 });
-$("#schedulingDiv").droppable({
+$("#ticketsContainer").droppable({
     drop : function(event,ui){
         var ticketId = eval(ui.draggable.attr("id").substring(ticketIdPrefix.length));
         var currentMachineId = "";
         var minDelta = 100000;
         $.each(machines, function( key, machine ) {
-           if (Math.abs($(".machineRow").height()*key-ui.position.top)<minDelta){
-               minDelta = Math.abs($(".machineRow").height()*key-ui.position.top);
+           if (Math.abs($(".machineRowContainer").height()*key-ui.position.top)<minDelta){
+               minDelta = Math.abs($(".machineRowContainer").height()*key-ui.position.top);
                currentMachineId = machine.id;
            }
         });
@@ -263,12 +209,109 @@ $("#schedulingDiv").droppable({
 });
 function dateToPosition(date){
     var elapseMin = (date.getTime() - timeLineScale.getStartDate().getTime()) / (1000 * 60);
-    return elapseMin*maxwidth/timeLineScale.getDuration();
+    return elapseMin*maxwidth/timeLineScale.getDuration() + firstColumnWidth;
 }
 function positionToDate(position){
-    var minFromStart=position*timeLineScale.getDuration()/maxwidth;
+    var minFromStart=(position - firstColumnWidth)*timeLineScale.getDuration()/maxwidth;
     return new Date(timeLineScale.getStartDate().getTime() + minFromStart*60000);
 }
+
+//////////
+
+$("button#load").click(function(){
+    loadData();
+    setMachines();
+    setTimeLine1Row();
+    setMachinesRows();
+    offsetTimeLine();
+    $.each( tickets, function( key, ticket ) {
+        var ticketElement = createTicketElement(ticket);
+    });
+    resizeWindows();
+});
+
+function changeTimeScale(){
+    setTimeLine1Row();
+    setMachinesRows();
+    offsetTimeLine();
+    resizeWindows();
+}
+
+function setTimeLine1Row(){
+        if (!$("#corner").length){
+           var corner = $("<div></div>");
+           corner.attr("id","corner");
+           $("#timeLineContainer").append(corner);
+        }
+        $(".timeLine1Cell").remove();
+        var columnsNb = timeLineScale.getDuration() / (timeLineScale.getInterval() * 60);
+        for (var i = 0; i < columnsNb; i++) {
+           var div = $("<div></div>");
+           div.addClass("timeLine1Cell");
+           div.addClass("divCell");
+           $("#timeLineContainer").append(div);
+        }
+}
+
+function setMachinesRow({id,name}){
+        var machineRow = $("<div></div>");
+        machineRow.attr("id",id);
+        machineRow.addClass("machineRowContainer");
+        $("#timeTableContainer").append(machineRow);
+        var columnsNb = timeLineScale.getDuration() / (timeLineScale.getInterval() * 60);
+        for (var i = -1; i < columnsNb; i++) {
+           var div = $("<div></div>");
+           if (i === -1) {
+               div.addClass("machineCell");
+               div.text(name);
+           }else{
+               div.addClass("rowCell");
+               div.addClass("divCell");
+           }
+           div.addClass("rowCell");
+           machineRow.append(div);
+        }
+        $("#scheduleContainer").height($(".rowCell").height()*$(".machineRowContainer").length);
+}
+
+function setMachinesRows(){
+    $(".machineRowContainer").remove();
+    $.each( machines, function( key, machine ) {
+        setMachinesRow(machine);
+    });
+    $("#scheduleContainer").height($(".rowCell").height()*$(".machineRowContainer").length);
+}
+
+function columnSize(){
+     return ($("#innerScheduleGrid").width() -($("#corner").width()+2)) / $(".timeLine1Cell").length - ($(".divCell").outerWidth(true)-$(".divCell").width());
+}
+
+function resizeColumns() {
+    $(".divCell").width(columnSize());
+}
+
+function offsetTimeLine(){
+        var interval = timeLineScale.getInterval();
+        var date = timeLineScale.getStartDate();
+        if (interval<24){
+            $(".timeLine1Cell").each(function(td){
+               var hour = date.getHours();
+               $(this).text(hour<10?"0"+hour+":00":hour+":00");
+               $(this).attr("datestring",date.toString());
+               date.setHours(date.getHours() + interval);
+            });
+        }else{
+            $(".timeLine1Cell").each(function(td){
+               $(this).text(date.getDate()+"/"+(date.getMonth()+1));
+               $(this).attr("datestring",date.toString());
+               date.setDate(date.getDate() + interval/24);
+            });
+        }
+        $(".timeLine1Cell").off("click").click(function(){
+            offsetStartDate($(this).attr("datestring"));
+        });
+        $("p").text(timeLineScale.getStartDate());
+    }
 
 });
 </script>
@@ -280,63 +323,115 @@ body {
 .machineRow{
     height:70px
 }
-.cell{
+
+.firstColumnCell{
     border: 1px solid lightgray;
     font-size:12px;
     color:darkgray;
     text-align:center;
+    width: 70px;
 }
 #timeLineRow1 {
     height: 20px
 }
-table {
-    border-collapse: collapse;
-    border: 1px solid lightgray;
-    table-layout: fixed;
-    width: 100%;
-}
-tr {
-    width: 100%;
-}
+
 div.ticket {
     position: absolute;
-    display: inline-block;
     top: 0;
     left: 0;
     width: 0;
     height: 70px;
 }
-#topDiv {
-    margin: 10px;
-    padding: 10px;
+
+#corner {
+    width: 80px;
+    height: 20px;
+    margin: 0;
+    border: 1px solid lightgray;
+    font-size:12px;
+    color:darkgray;
+    text-align:center;
+}
+.divCell {
+    width: 0px;
+    margin: 0;
+    font-size:12px;
+    color:darkgray;
+    text-align:center;
+}
+
+.timeLine1Cell {
+    height: 20px;
+    border-top: 1px solid lightgray;
+    border-right: 1px solid lightgray;
+    border-bottom: 1px solid lightgray;
+}
+.rowCell {
+    border-right: 1px solid lightgray;
+    border-bottom: 1px solid lightgray;
+}
+.machineCell {
+    width: 80px;
+    margin: 0;
+    border-left: 1px solid lightgray;
+    border-right: 1px solid lightgray;
+    border-bottom: 1px solid lightgray;
+    font-size:12px;
+    color:darkgray;
+    text-align:center;
+}
+.rowCell {
+    height: 70px;
+    margin: 0px;
+}
+#outerScheduleGrid {
     background-color: white;
     box-shadow: 0 0.2rem 0.8rem 0 rgba(0,0,0,0.08), 0 0.4rem 1.6rem 0 rgba(0,0,0,0.16);
+    margin:10px 10px;
+    padding:10px 10px;
 }
-#schedulingDiv {
-    margin: 10px 0 0 0;
+#innerScheduleGrid {
+    width: 100%;
+    height: auto;
+}
+#timeLineContainer {
+    margin-top: 10px;
+    display: flex;
+    display: -webkit-flex;
+}
+.machineRowContainer {
+    display: flex;
+    display: -webkit-flex;
+}
+#timeTableContainer,
+#ticketsContainer {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+#scheduleContainer{
     position: relative;
+    height: 0px;
 }
 
 </style>
 </head>
 <body>
-    <p>hello world !</p>
+<p>hello world !</p>
 
-    <div id="topDiv">
-    <button id="start">start</button>
-    <button id="modify">modify</button>
+    <div id="outerScheduleGrid">
+        <div id="innerScheduleGrid">
+    <button id="load">load</button>
     <button id="zoomin">+</button>
     <button id="zoomout">-</button>
-    
-    <div id="schedulingDiv">
-       <table id="ticketsTable"> 
-          <thead>
-             <tr id="timeLineRow1"></tr>
-          </thead>
-          <tbody>
-          </tbody>
-       </table>
-    </div>
+            <div id="timeLineContainer"></div>
+            <div id="scheduleContainer">
+            <div id="timeTableContainer"></div>
+            <div id="ticketsContainer"></div>
+            </div>
+        </div>
     </div>
 </body>
 </html>
