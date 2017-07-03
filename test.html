@@ -249,6 +249,10 @@ function setTimeLine1Row(){
            var div = $("<div></div>");
            div.addClass("timeLine1Cell");
            div.addClass("divCell");
+           div.addClass("flex");
+           innerdiv = $("<div></div>");
+           innerdiv.addClass("autoMargin");
+           div.append(innerdiv);
            $("#timeLineContainer").append(div);
         }
 }
@@ -257,13 +261,18 @@ function setMachinesRow({id,name}){
         var machineRow = $("<div></div>");
         machineRow.attr("id",id);
         machineRow.addClass("machineRowContainer");
+        machineRow.addClass("flex");
         $("#timeTableContainer").append(machineRow);
         var columnsNb = timeLineScale.getDuration() / (timeLineScale.getInterval() * 60);
         for (var i = -1; i < columnsNb; i++) {
            var div = $("<div></div>");
            if (i === -1) {
                div.addClass("machineCell");
-               div.text(name);
+               div.addClass("flex");
+               innerdiv = $("<div></div>");
+               innerdiv.addClass("autoMargin");
+               innerdiv.text(name);
+               div.append(innerdiv);
            }else{
                div.addClass("rowCell");
                div.addClass("divCell");
@@ -296,13 +305,13 @@ function offsetTimeLine(){
         if (interval<24){
             $(".timeLine1Cell").each(function(td){
                var hour = date.getHours();
-               $(this).text(hour<10?"0"+hour+":00":hour+":00");
+               $(this).children("div").text(hour<10?"0"+hour+":00":hour+":00");
                $(this).attr("datestring",date.toString());
                date.setHours(date.getHours() + interval);
             });
         }else{
             $(".timeLine1Cell").each(function(td){
-               $(this).text(date.getDate()+"/"+(date.getMonth()+1));
+               $(this).children("div").text(date.getDate()+"/"+(date.getMonth()+1));
                $(this).attr("datestring",date.toString());
                date.setDate(date.getDate() + interval/24);
             });
@@ -359,6 +368,9 @@ div.ticket {
     color:darkgray;
     text-align:center;
 }
+.autoMargin {
+    margin: auto;
+}
 
 .timeLine1Cell {
     height: 20px;
@@ -396,10 +408,8 @@ div.ticket {
 }
 #timeLineContainer {
     margin-top: 10px;
-    display: flex;
-    display: -webkit-flex;
 }
-.machineRowContainer {
+.flex {
     display: flex;
     display: -webkit-flex;
 }
@@ -426,7 +436,7 @@ div.ticket {
     <button id="load">load</button>
     <button id="zoomin">+</button>
     <button id="zoomout">-</button>
-            <div id="timeLineContainer"></div>
+            <div id="timeLineContainer" class="flex"></div>
             <div id="scheduleContainer">
             <div id="timeTableContainer"></div>
             <div id="ticketsContainer"></div>
